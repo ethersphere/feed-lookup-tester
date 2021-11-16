@@ -44,6 +44,8 @@ async function waitSyncing(bee: Bee, tagUid: number): Promise<void | never> {
 
     if (syncStatus >= tag.total) {
       synced = true
+      // FIXME: after successful syncing the chunk is still not available.
+      await new Promise(resolve => setTimeout(resolve, 500))
       break
     }
   }
