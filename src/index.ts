@@ -109,6 +109,7 @@ async function waitSyncing(bee: Bee, tagUid: number): Promise<void | never> {
   const reference = makeBytes(32) // all zeroes
 
   for(let i = 0; i < updates; i++) {
+    let startTime = new Date().getTime()
     const spinner = ora(`Upload feed for index ${i}`)
     spinner.start()
     
@@ -116,18 +117,27 @@ async function waitSyncing(bee: Bee, tagUid: number): Promise<void | never> {
     spinner.text = `Wait for feed update sync at index ${i}`
     const tag = await beeWriter.createTag()
     await feedWriter.upload(stamp, reference, { tag: tag.uid })
+    const uploadTime = new Date().getTime() - startTime
+
+    startTime = new Date().getTime() 
     await waitSyncing(beeWriter, tag.uid)
+    const syncingTime = new Date().getTime() - startTime
 
     spinner.text = `Download feed for index ${i}`
 
-    // timer start
+    startTime = new Date().getTime() 
     const firstUpdateFetch = await feedReader.download()
-    // timer stop
+    const downloadTime = new Date().getTime() - startTime
 
     fetchDataCheck(firstUpdateFetch, reference, i)
 
     spinner.text = `Feed update ${i} fetch was successful`
     spinner.stopAndPersist()
+
+    console.log(`\tUpload Time: ${uploadTime / 1000}s`
+      + `\n\tSyncing time: ${syncingTime / 1000}s`
+      + `\n\tFetch time: ${downloadTime / 1000}s`
+    )
 
     incrementBytes(reference)
   }
