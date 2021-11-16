@@ -39,7 +39,7 @@ import { Bytes } from "@ethersphere/bee-js/dist/src/utils/bytes"
 }
 
 export function feedIndexBeeResponse(index: number): string {
-  return String(index).padStart(16, '0')
+  return index.toString(16).padStart(16, '0')
 }
 
 export function incrementBytes(bytes: Uint8Array): void {
