@@ -89,6 +89,12 @@ async function waitSyncing(bee: Bee, tagUid: number): Promise<void | never> {
       describe: 'From what seed the random topic will be generated',
       default: 10
     })
+    .option('download-iteration', {
+      alias: 'di',
+      type: 'number',
+      describe: 'Attempt to download the feed from the other Bee client on every given amount of feed update',
+      default: 1
+    })
     .help('h')
     .alias('h', 'help').epilog(`Testing Ethereum Swarm Feed lookup time`).argv
 
@@ -97,6 +103,10 @@ async function waitSyncing(bee: Bee, tagUid: number): Promise<void | never> {
   const stamp = process.env.BEE_STAMP || argv.stamp
   const updates = argv.updates
   const topicSeed = argv['topic-seed']
+  const downloadIteration = argv['download-iteration']
+  if(downloadIteration > updates) {
+    throw new Error(`Download iteration ${downloadIteration} is higher than the feed update count: ${updates}`)
+  }
 
   const beeWriter = new Bee(beeWriterUrl)
   const beeReader = new Bee(beeReaderUrl)
@@ -107,6 +117,7 @@ async function waitSyncing(bee: Bee, tagUid: number): Promise<void | never> {
 
   // reference that the feed refers to
   const reference = makeBytes(32) // all zeroes
+  let downloadIterationIndex = 0
 
   for(let i = 0; i < updates; i++) {
     let startTime = new Date().getTime()
@@ -123,21 +134,32 @@ async function waitSyncing(bee: Bee, tagUid: number): Promise<void | never> {
     await waitSyncing(beeWriter, tag.uid)
     const syncingTime = new Date().getTime() - startTime
 
-    spinner.text = `Download feed for index ${i}`
+    if(++downloadIterationIndex === downloadIteration) {
+      downloadIterationIndex = 0
 
-    startTime = new Date().getTime() 
-    const firstUpdateFetch = await feedReader.download()
-    const downloadTime = new Date().getTime() - startTime
-
-    fetchDataCheck(firstUpdateFetch, reference, i)
-
-    spinner.text = `Feed update ${i} fetch was successful`
-    spinner.stopAndPersist()
-
-    console.log(`\tUpload Time: ${uploadTime / 1000}s`
-      + `\n\tSyncing time: ${syncingTime / 1000}s`
-      + `\n\tFetch time: ${downloadTime / 1000}s`
-    )
+      spinner.text = `Download feed for index ${i}`
+  
+      startTime = new Date().getTime() 
+      const firstUpdateFetch = await feedReader.download()
+      const downloadTime = new Date().getTime() - startTime
+  
+      fetchDataCheck(firstUpdateFetch, reference, i)
+  
+      spinner.text = `Feed update ${i} fetch was successful`
+      spinner.stopAndPersist()
+  
+      console.log(`\tUpload Time: ${uploadTime / 1000}s`
+        + `\n\tSyncing time: ${syncingTime / 1000}s`
+        + `\n\tFetch time: ${downloadTime / 1000}s`
+      )
+    } else {
+      spinner.text = `Feed update ${i} fetch was successful`
+      spinner.stopAndPersist()
+  
+      console.log(`\tUpload Time: ${uploadTime / 1000}s`
+        + `\n\tSyncing time: ${syncingTime / 1000}s`
+      )
+    }
 
     incrementBytes(reference)
   }
