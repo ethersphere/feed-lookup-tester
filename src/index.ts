@@ -17,20 +17,27 @@ export const testIdentity = {
   address: '8d3766440f0d7b949a5e32995d09619a7f86e632',
 }
 
+/**
+ * Checks whether the fetched resource is the same as expected
+ * 
+ * @returns false if there were no errors or the error message
+ */
 function fetchDataCheck(
   updateFetch: FetchFeedUpdateResponse, 
   expectedFeedRef: ChunkReference, 
   expectedFeedIndex: number,
   beeNodeUrl: string
-) {
+): false | string {
   const beeFeedIndex = feedIndexBeeResponse(expectedFeedIndex)
   const feedRef =  Utils.bytesToHex(expectedFeedRef)
 
   if(updateFetch.feedIndex !== beeFeedIndex || feedRef !== updateFetch.reference) {
-    throw Error(`Downloaded feed payload or index has not the expected result at Bee node "${beeNodeUrl}".`
-      + `\n\tindex| expected: "${beeFeedIndex}" got: "${updateFetch.feedIndex}"`
-      + `\n\treference| expected: "${feedRef}" got: "${updateFetch.reference}"`)
+    return `\tDownloaded feed payload or index has not the expected result at Bee node "${beeNodeUrl}".`
+      + `\n\t\tindex| expected: "${beeFeedIndex}" got: "${updateFetch.feedIndex}"`
+      + `\n\t\treference| expected: "${feedRef}" got: "${updateFetch.reference}"`
   }
+
+  return false
 }
 
 async function waitSyncing(bee: Bee, tagUid: number): Promise<void | never> {
@@ -76,24 +83,24 @@ async function measureAync(hookFunction: () => Promise<any>): Promise<MeasureAyn
 
 /** Used for console log */
 function beeWriterResults(urls: string[], measuredTimes: number[]): string {
-  let result = ''
+  const results: string[] = []
   urls.forEach((url, i) => {
     const time = measuredTimes[i]
-    result += `\n\tUpload Time on "${url}": ${time / 1000}s`
+    results.push(`\tUpload Time on "${url}": ${time / 1000}s`)
   })
 
-  return result
+  return results.join('\n')
 }
 
 /** Used for console log */
 function beeReaderResults(urls: string[], measuredTimes: number[]): string {
-  let result = ''
+  const results: string[] = []
   urls.forEach((url, i) => {
     const time = measuredTimes[i]
-    result += `\n\tFetch Time on "${url}": ${time / 1000}s`
+    results.push(`\tFetch Time on "${url}": ${time / 1000}s`)
   })
 
-  return result
+  return results.join('\n')
 }
 
 // eslint-disable-next-line @typescript-eslint/no-extra-semi
@@ -201,20 +208,27 @@ function beeReaderResults(urls: string[], measuredTimes: number[]): string {
       const downloadTimes: number[] = []
   
       // check data correctness
+      const checks: (string | false)[] = []
       downloads.forEach((download, j) => {
         downloadTimes.push(download.measuredTime)
 
-        const url = beeReaderUrls[i]
-        fetchDataCheck(download.returnValue, reference, i, url)
+        const url = beeReaderUrls[j]
+        checks.push(fetchDataCheck(download.returnValue, reference, i, url))
       })
   
       spinner.text = `Feed update ${i} fetch was successful`
       spinner.stopAndPersist()
   
       console.log(beeWriterResults(beeWriterUrls, uploadTimes)
-        + `\n\tSyncing time: ${syncingTime / 1000}s`
+        + `\n\tSyncing time: ${syncingTime / 1000}s\n`
         + beeReaderResults(beeReaderUrls, uploadTimes)
       )
+
+      const errors = checks.filter(check => check)
+      if(errors.length > 0) {
+        console.error(`Some bee nodes couldn't fetch the Feed as expected.\n`
+         + errors.join('\n'))
+      }
     } else {
       spinner.text = `Feed update ${i} fetch was successful`
       spinner.stopAndPersist()
