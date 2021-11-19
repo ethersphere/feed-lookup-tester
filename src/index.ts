@@ -70,7 +70,7 @@ async function measureAync(hookFunction: () => Promise<any>): Promise<MeasureAyn
   const returnValue = await hookFunction()
   return {
     returnValue,
-    measuredTime: startTime - new Date().getTime()
+    measuredTime: new Date().getTime() - startTime
   }
 }
 
