@@ -1,0 +1,36 @@
+{
+  "name": "@ethersphere/feed-lookup-tester",
+  "version": "1.0.0",
+  "description": "Testing how quickly Bee can retrieve Feed updates",
+  "main": "dist/index.js",
+  "scripts": {
+    "compile": "rimraf ./dist && tsc",
+    "prepare": "npm run compile",
+    "start": "ts-node src/index.ts",
+    "types:check": "tsc --project tsconfig.test.json"
+  },
+  "keywords": [
+    "feed",
+    "feeds",
+    "ethereum-swarm",
+    "bee-js"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ethersphere/feed-lookup-tester.git"
+  },
+  "license": "BSD-3-Clause",
+  "dependencies": {
+    "@ethersphere/bee-js": "^2.1.1",
+    "ora": "^5.3.1",
+    "yargs": "^17.2.1"
+  },
+  "devDependencies": {
+    "@types/node": "^16.11.7",
+    "@types/yargs": "^17.0.5",
+    "prettier": "^2.4.1",
+    "rimraf": "^3.0.2",
+    "ts-node": "^9.1.1",
+    "typescript": "^4.1.3"
+  }
+}
