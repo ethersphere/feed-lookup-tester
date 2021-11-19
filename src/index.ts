@@ -125,17 +125,19 @@ async function waitSyncing(bee: Bee, tagUid: number): Promise<void | never> {
     spinner.start()
     
     // create tag for the full sync
-    spinner.text = `Wait for feed update sync at index ${i}`
-    const tag = await beeWriter.createTag()
-    await feedWriter.upload(stamp, reference, { tag: tag.uid })
+    // const tag = await beeWriter.createTag()
+    // await feedWriter.upload(stamp, reference, { tag: tag.uid })
+    await feedWriter.upload(stamp, reference)
     const uploadTime = new Date().getTime() - startTime
-
-    startTime = new Date().getTime() 
-    await waitSyncing(beeWriter, tag.uid)
-    const syncingTime = new Date().getTime() - startTime
 
     if(++downloadIterationIndex === downloadIteration) {
       downloadIterationIndex = 0
+
+      startTime = new Date().getTime() 
+      spinner.text = `Wait for feed update sync at index ${i}`
+      // await waitSyncing(beeWriter, tag.uid)
+      await new Promise(resolve => setTimeout(resolve, 40000))
+      const syncingTime = new Date().getTime() - startTime
 
       spinner.text = `Download feed for index ${i}`
   
@@ -156,9 +158,7 @@ async function waitSyncing(bee: Bee, tagUid: number): Promise<void | never> {
       spinner.text = `Feed update ${i} fetch was successful`
       spinner.stopAndPersist()
   
-      console.log(`\tUpload Time: ${uploadTime / 1000}s`
-        + `\n\tSyncing time: ${syncingTime / 1000}s`
-      )
+      console.log(`\tUpload Time: ${uploadTime / 1000}s`)
     }
 
     incrementBytes(reference)
